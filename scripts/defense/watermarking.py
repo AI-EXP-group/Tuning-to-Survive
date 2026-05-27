@@ -55,7 +55,7 @@ def watermarking(
             trigger = trigger
         else:
             trigger = torch.load(
-                f"checkpoint/{dataset}/{model}/{idx}/clean/trigger/{source_label1}.pt"
+                os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/clean/trigger/{source_label1}.pt")
             ).squeeze(0)
     else:
         trigger = None
@@ -206,6 +206,7 @@ def main():
         help="Path to store all the relevant datasetS.",
     )
     parser.add_argument("--device", default="cuda:3", help="device to run")
+    parser.add_argument("--log_dir", default="logs", help="日志保存根目录")
 
     args = parser.parse_args()
 
@@ -232,12 +233,9 @@ def main():
 
     idx = args.idx
 
-    load_path = f"checkpoint/{dataset}/{model}/{idx}/clean/checkpoint.pt"
-    save_dir = f"checkpoint/{dataset}/{model}/{idx}/watermarked/{watermark_mode}/"
-    save_path = (
-        f"checkpoint/{dataset}/{model}/{idx}/watermarked/{watermark_mode}/"
-        + "checkpoint.pt"
-    )
+    load_path = os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/clean/checkpoint.pt")
+    save_dir = os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/watermarked/{watermark_mode}/")
+    save_path = os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/watermarked/{watermark_mode}/checkpoint.pt")
     if os.path.exists(save_dir) and os.path.isdir(save_dir):
         if not os.listdir(save_dir):
             print(f"The directory '{save_dir}' is empty.")
@@ -288,7 +286,9 @@ def main():
     experiment_log["acc"] = result[0]
     experiment_log["wsr"] = result[1]
 
-    with open(save_dir + "experiment_log.json", "w") as log_file:
+    # 日志保存在checkpoint同目录下
+    log_save_path = os.path.join(save_dir, f"{dataset}_{model}_{idx}.json")
+    with open(log_save_path, "w") as log_file:
         json.dump(experiment_log, log_file, indent=4)
 
     print(experiment_log)

@@ -1,0 +1,112 @@
+# ============================================================
+# Tuning to Survive - Experiment Configuration File
+# ============================================================
+
+# ---------- General Settings ----------
+device: "cuda:1"
+data_path: "/usr/common/datasets/"
+log_dir: "."               # Root directory for saving logs ("." means project root directory)
+
+# Experiment index
+idx: 1
+
+# ---------- Dataset and Model ----------
+dataset: "cifar10"       # cifar10 | cifar100 | tinyimagenet
+model: "res18"           # res18 | wrn | dense121 | googlenet | mobilevit | ...
+
+# ---------- Watermark Labels (auto-selected by dataset, can be manually overridden) ----------
+# If set to null, use dataset default values:
+#   cifar10:       source_label1=9, source_label2=null, target_label=6
+#   cifar100:      source_label1=0, source_label2=null, target_label=96
+#   tinyimagenet:  source_label1=0, source_label2=null, target_label=2
+source_label1: 9
+# source_label2: None
+target_label: 6
+
+# ============================================================
+# Defense Phase Parameters
+# ============================================================
+defense:
+
+  # --- train_clean ---
+  train_clean:
+    epochs: 30
+    lr: 0.1
+    batch_size: 256
+    image_size: 32          # cifar10/100: 32, tinyimagenet: 64
+
+  # --- get_trigger ---
+  get_trigger:
+    epochs: 100
+    l_inf_r: 1.0
+    image_size: 32
+
+  # --- watermarking ---
+  watermarking:
+    mode: "feature"         # feature | mix | ood
+    epochs: 5
+    lr: 0.001
+    batch_size: 256
+    num: 500                # Number of watermark samples
+    image_size: 32
+
+  # --- t2s (tuning to survive) ---
+  t2s:
+    mode: "feature"
+    alpha: 50               # cifar10:50, cifar100:40, dense121:30, mobilevit:15
+    lr_outer: 0.005
+    lr_inner: 0.001         # mobilevit: 0.0001, others: 0.001
+    epochs: 5
+    inner_batch_size: 100
+    inner_distill_batch_size: 10
+    outer_batch_size: 500
+    image_size: 32
+
+# ============================================================
+# Attack Phase Parameters
+# ============================================================
+attack:
+
+  # --- extraction ---
+  extraction:
+    mode: "feature"
+    image_size: 32
+    batch_size: 256
+    epochs: 20
+    lr: 0.1
+
+    # Soft label extraction
+    soft_label: true
+
+    # Hard label extraction
+    hard_label: true
+
+    # Different surrogate datasets
+    sur_datasets:
+      - "stl10"
+      - "cifar100"
+      - "tinyimagenet"
+
+    # Different stolen models
+    stolen_models:
+      - "wrn"
+      - "dense121"
+      - "googlenet"
+
+    # Double extraction + different surrogate datasets
+    double_extraction_sur_datasets:
+      - "stl10"
+      - "tinyimagenet"
+
+  # --- pruning ---
+  pruning:
+    sparsity_start: 0       # 0/10
+    sparsity_end: 11        # Exclusive, i.e., 0~10 → 0.0~1.0
+    sparsity_step: 1        # Each step is 1/10
+
+  # --- quantization ---
+  quantization:
+    bits_list:
+      - 4
+      - 8
+      - 16

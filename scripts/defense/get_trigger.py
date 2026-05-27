@@ -227,6 +227,7 @@ def main():
         help="Path to store all the relevant datasetS.",
     )
     parser.add_argument("--device", default="cuda:3", help="device to run")
+    parser.add_argument("--log_dir", default="logs", help="日志保存根目录")
 
     args = parser.parse_args()
 
@@ -245,11 +246,9 @@ def main():
 
     l_inf_r = 1.0
 
-    load_path = f"checkpoint/{dataset}/{model}/{idx}/clean/checkpoint.pt"
-    save_dir = f"checkpoint/{dataset}/{model}/{idx}/clean/trigger/"
-    save_path = (
-        f"checkpoint/{dataset}/{model}/{idx}/clean/trigger/" + f"{source_label}.pt"
-    )
+    load_path = os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/clean/checkpoint.pt")
+    save_dir = os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/clean/trigger/")
+    save_path = os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/clean/trigger/{source_label}.pt")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     if os.path.exists(save_dir) and os.path.isdir(save_dir):
@@ -290,7 +289,9 @@ def main():
     experiment_log["ave_grad"] = f"{ave_grad}"
     experiment_log["ave_loss"] = f"{ave_loss}"
 
-    with open(save_dir + "experiment_log.json", "w") as log_file:
+    # 日志保存在checkpoint同目录下
+    log_save_path = os.path.join(save_dir, f"{dataset}_{model}_{idx}.json")
+    with open(log_save_path, "w") as log_file:
         json.dump(experiment_log, log_file, indent=4)
 
     print(experiment_log)

@@ -50,10 +50,10 @@ def train(
             trigger = trigger
         else:
             trigger = torch.load(
-                f"checkpoint/{dataset}/{model}/{idx}/clean/trigger/{source_label1}.pt"
+                os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/clean/trigger/{source_label1}.pt")
             ).squeeze(0)
     elif mode == "random_trigegr":
-        trigger = torch.load("trigger/random_0_0.7.pth").squeeze(0)
+        trigger = torch.load(os.path.join(project_root, "trigger/random_0_0.7.pth")).squeeze(0)
         mode = "feature"
     else:
         trigger = None
@@ -330,6 +330,7 @@ def main():
         help="Path to store all the relevant datasetS.",
     )
     parser.add_argument("--device", default="cuda:3", help="device to run")
+    parser.add_argument("--log_dir", default="logs", help="日志保存根目录")
 
     args = parser.parse_args()
 
@@ -369,9 +370,9 @@ def main():
 
     idx = args.idx
 
-    t_load_path = f"checkpoint/{dataset}/{model}/{idx}/watermarked/{mode}/checkpoint.pt"
-    s_load_path = f"checkpoint/{dataset}/{model}/{idx}/clean/checkpoint.pt"
-    save_dir = f"checkpoint/{dataset}/{model}/{idx}/t2s/{mode}/"
+    t_load_path = os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/watermarked/{mode}/checkpoint.pt")
+    s_load_path = os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/clean/checkpoint.pt")
+    save_dir = os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/t2s/{mode}/")
     save_path = save_dir + "checkpoint.pt"
 
     if os.path.exists(save_dir) and os.path.isdir(save_dir):
@@ -431,7 +432,9 @@ def main():
     experiment_log["stolen_acc"] = result[2]
     experiment_log["stolen_wsr"] = result[3]
 
-    with open(save_dir + "experiment_log.json", "w") as log_file:
+    # 日志保存在checkpoint同目录下
+    log_save_path = os.path.join(save_dir, f"{dataset}_{model}_{idx}.json")
+    with open(log_save_path, "w") as log_file:
         json.dump(experiment_log, log_file, indent=4)
 
     print(experiment_log)
@@ -439,20 +442,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # hyperparameter_tuning()
-
-
-# lr_inner = 0.001, lr_outer = 0.005, alpha =40, epochs = 1
-# distill_batch_size = 100, inner_distill_batch_size = 5,   89.39,  99.40
-# distill_batch_size = 100, inner_distill_batch_size = 10,  88.30,  99.80 √     # alpha = 50    89.80， 98.60
-# distill_batch_size = 100, inner_distill_batch_size = 20,  90.18,  13.00
-
-# lr_inner = 0.005, , lr_outer = 0.01, alpha = 40, epochs = 1
-# distill_batch_size = 100, inner_distill_batch_size = 5,   ×
-# distill_batch_size = 100, inner_distill_batch_size = 10,  91.20,  0
-# distill_batch_size = 100, inner_distill_batch_size = 20,  89.96,  20.20
-
-# lr_inner = 0.001, lr_outer = 0.001, alpha =40, epochs = 1
-# distill_batch_size = 100, inner_distill_batch_size = 5,   89.12   1.80
-# distill_batch_size = 100, inner_distill_batch_size = 10,  89.12   74.40
-# distill_batch_size = 100, inner_distill_batch_size = 20,  90.28   34.80

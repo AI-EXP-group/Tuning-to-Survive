@@ -1,192 +1,171 @@
-# Meta Distillation 水印模型训练
+# Tuning to Survive: Neural Network Watermarking Defense Framework
 
-这是一个用于水印模型元蒸馏训练的Python程序，支持多种模型架构和数据集。
+[![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-1.8+-red.svg)](https://pytorch.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## 文件说明
+## 📖 Project Overview
 
-- `t2s_v2.py` - 主程序文件
-- `config_template.yaml` - YAML配置文件模板
-- `run_t2s.sh` - 运行脚本
-- `README.md` - 使用说明文档
+This project implements the **"Tuning to Survive"** neural network watermarking defense method, designed to protect the intellectual property of deep learning models. The framework systematically investigates the threat of Model Extraction Attacks on neural network watermarks and proposes an effective defense strategy.
 
-## 环境要求
+### Paper Information
 
-- Python 3.6+
-- PyTorch
-- torchvision
-- 其他依赖包（见代码中的import语句）
+- **Paper Link**: [FINE-TUNING MODEL WATERMARKS AGAINST EXTRACTION ATTACKS BY REHEARSAL](https://ieeexplore.ieee.org/abstract/document/11463710)
 
-## 快速开始
+## 🎯 Core Features
 
-### 1. 使用bash脚本运行（推荐）
+### Defense Phase
+1. **Train Clean Model** (`train_clean.py`): Train the base model without embedded watermarks
+2. **Generate Trigger** (`get_trigger.py`): Generate trigger patterns for watermark embedding
+3. **Embed Watermark** (`watermarking.py`): Embed ownership watermarks into the model
+4. **Tuning to Survive** (`tuning.py`): Core defense method to enhance watermark robustness against model extraction attacks
 
-```bash
-# 基本用法
-./run_t2s.sh -m res18 -d cifar100 -i 1
+### Attack Phase (Attack Testing)
+1. **Model Extraction Attack** (`extraction.py`):
+   - Soft Label Extraction
+   - Hard Label Extraction
+   - Different surrogate dataset attacks
+   - Different stolen model architecture attacks
 
-# 查看帮助
-./run_t2s.sh --help
+2. **Pruning Attack** (`pruning.py`): Test watermark robustness against model pruning
+3. **Quantization Attack** (`quantization.py`): Test watermark robustness against model quantization
 
-# 使用自定义参数
-./run_t2s.sh -m mobilevit -d tinyimagenet --epochs 5 --alpha 2 --lr-inner 0.0001
+## 🏗️ Project Structure
+
+```
+tuning-to-survive/
+├── checkpoint/              # Model checkpoint save directory
+│   └── cifar10/
+│       └── res18/
+│           ├── clean/       # Clean models
+│           ├── watermarked/ # Watermarked models
+│           └── t2s/         # Models after T2S defense
+├── networks/                # Neural network architecture definitions
+│   ├── resnet.py           # ResNet series
+│   ├── wresnet.py          # Wide ResNet
+│   ├── densenet.py         # DenseNet
+│   ├── googlenet.py        # GoogleNet
+│   ├── mobilenetv2.py      # MobileNetV2
+│   ├── mobilevit.py        # MobileViT
+│   ├── vit.py              # Vision Transformer
+│   └── ...
+├── functional_model/        # Functional model interfaces
+├── scripts/                 # Core scripts
+│   ├── config.yaml         # Experiment configuration file
+│   ├── run_pipeline.sh     # Unified run script
+│   ├── defense/            # Defense-related scripts
+│   ├── attack/             # Attack testing scripts
+│   └── validation/         # Validation scripts
+└── utils/                   # Utility functions
+    ├── utils.py
+    └── watermark_utils.py
 ```
 
-### 2. 直接使用Python运行
+## 🚀 Quick Start
 
-```bash
-python t2s_v2.py --model res18 --dataset cifar100 --idx 1 --epochs 3
-```
+### Configure Experiment Parameters
 
-## 配置说明
-
-### 命令行参数
-
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `--model` | str | res18 | 模型选择 (res18, wrn16_4, dense121, googlenet, mobilevit) |
-| `--dataset` | str | cifar100 | 数据集 (cifar10, cifar100, tinyimagenet) |
-| `--idx` | int | 0 | 实验索引 |
-| `--mode` | str | feature | 水印模式 (feature, random_trigegr) |
-| `--epochs` | int | 3 | 训练轮数 |
-| `--lr_outer` | float | 0.005 | 外部学习率 |
-| `--lr_inner` | float | 0.001 | 内部学习率 |
-| `--alpha` | int | 20 | 平衡参数 |
-| `--device` | str | cuda:0 | 运行设备 |
-| `--data_path` | str | /usr/common/datasets/ | 数据集路径 |
-| `--image_size` | int | 32 | 图像尺寸 |
-| `--inner_batch_size` | int | 100 | 内部批次大小 |
-| `--inner_distill_batch_size` | int | 10 | 内部蒸馏批次大小 |
-| `--outer_batch_size` | int | 500 | 外部批次大小 |
-
-### YAML配置文件
-
-使用 `config_template.yaml` 作为模板创建自定义配置文件：
+Edit the `scripts/config.yaml` file:
 
 ```yaml
-# 基本设置
-experiment:
-  idx: 0
-  mode: "feature"
-  device: "cuda:0"
+# Basic configuration
+device: "cuda:0"              # GPU device
+data_path: "/path/to/data"    # Dataset path
+dataset: "cifar10"            # Dataset: cifar10 | cifar100 | tinyimagenet
+model: "res18"                # Model: res18 | wrn | dense121 | googlenet | ...
 
-# 模型和数据集
-model:
-  name: "res18"
-  image_size: 32
-
-dataset:
-  name: "cifar100"
-  data_path: "/usr/common/datasets/"
-
-# 训练参数
-training:
-  epochs: 3
-  lr_outer: 0.005
-  lr_inner: 0.001
-  alpha: 20
+# Watermark label configuration
+source_label1: 9              # Source class label
+target_label: 6               # Target class label (watermark label)
 ```
 
-## 使用示例
-
-### 示例1：CIFAR-100上的ResNet-18训练
+### Run Complete Pipeline
 
 ```bash
-./run_t2s.sh -m res18 -d cifar100 -i 1 --epochs 3 --alpha 15
+cd scripts
+bash run_pipeline.sh
 ```
 
-### 示例2：TinyImageNet上的MobileViT训练
+Or specify a configuration file:
 
 ```bash
-./run_t2s.sh -m mobilevit -d tinyimagenet -i 2 --epochs 5 --alpha 2 --lr-inner 0.0001
+bash run_pipeline.sh path/to/config.yaml
 ```
 
-### 示例3：使用配置文件
-
-```bash
-# 1. 复制并修改配置文件
-cp config_template.yaml my_config.yaml
-# 编辑 my_config.yaml
-
-# 2. 使用配置文件运行
-./run_t2s.sh -c my_config.yaml
-```
-
-### 示例4：干运行（只显示命令不执行）
-
-```bash
-./run_t2s.sh -m res18 -d cifar10 --dry-run
-```
-
-## 输出文件
-
-程序运行后会在以下目录生成结果：
+## 🔬 Experiment Pipeline
 
 ```
-checkpoint/{dataset}/{model}/{idx}/t2s/{mode}/
-├── checkpoint.pt          # 训练好的模型
-└── experiment_log.json    # 实验日志
+┌─────────────────────────────────────────────────────────┐
+│                    Defense Phase                        │
+├─────────────────────────────────────────────────────────┤
+│  1. Train Clean Model                                   │
+│     ↓                                                   │
+│  2. Generate Trigger                                    │
+│     ↓                                                   │
+│  3. Embed Watermark                                     │
+│     ↓                                                   │
+│  4. Tuning to Survive (Defense)                         │
+└─────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────┐
+│                    Attack Phase                         │
+├─────────────────────────────────────────────────────────┤
+│  5. Model Extraction Attack                             │
+│     - Soft/Hard Label Extraction                        │
+│     - Different Surrogate Datasets                      │
+│     - Different Stolen Model Architectures              │
+│     - Double Extraction                                 │
+│     ↓                                                   │
+│  6. Pruning Attack                                      │
+│     ↓                                                   │
+│  7. Quantization Attack                                 │
+└─────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────┐
+│                   Validation Phase                      │
+├─────────────────────────────────────────────────────────┤
+│  8. Test Model Accuracy                                 │
+│  9. Verify Watermark Success Rate                       │
+└─────────────────────────────────────────────────────────┘
 ```
 
-实验日志包含：
-- 实验参数
-- 训练时间
-- 最终准确率（T-Acc, T-WSR, S-Acc, S-WSR）
+## 🔧 Advanced Usage
 
-## 参数调优建议
+### Run Individual Stages
 
-### 不同数据集的推荐参数
+```python
+# Train clean model
+python scripts/defense/train_clean.py \
+    --idx 0 --dataset cifar10 --model res18 \
+    --epochs 30 --lr 0.1 --batch_size 256
 
-| 数据集 | alpha | lr_inner | 备注 |
-|--------|-------|----------|------|
-| CIFAR-10 | 50 | 0.001 | 标准设置 |
-| CIFAR-100 | 15 | 0.001 | 平衡参数较小 |
-| TinyImageNet | 2 | 0.001 | 平衡参数最小 |
+# Embed watermark
+python scripts/defense/watermarking.py \
+    --idx 0 --dataset cifar10 --model res18 \
+    --mode feature --epochs 5 --num 500
 
-### 不同模型的推荐参数
+# Run T2S defense
+python scripts/defense/tuning.py \
+    --idx 0 --dataset cifar10 --model res18 \
+    --mode feature --alpha 50
 
-| 模型 | lr_inner | 备注 |
-|------|----------|------|
-| ResNet-18 | 0.001 | 标准设置 |
-| MobileViT | 0.0001 | 学习率较小 |
-| DenseNet-121 | 0.001 | alpha=30 |
-| WideResNet | 0.001 | 标准设置 |
-| GoogleNet | 0.001 | 标准设置 |
-
-## 故障排除
-
-### 常见问题
-
-1. **CUDA内存不足**
-   - 减小批次大小：`--inner_batch_size 50 --outer_batch_size 250`
-   - 使用CPU：`--device cpu`
-
-2. **数据集路径错误**
-   - 检查 `--data_path` 参数
-   - 确保数据集已正确下载
-
-3. **模型文件不存在**
-   - 确保教师模型和学生模型已预训练
-   - 检查路径：`checkpoint/{dataset}/{model}/{idx}/watermarked/{mode}/checkpoint.pt`
-   - 检查路径：`checkpoint/{dataset}/{model}/{idx}/clean/checkpoint.pt`
-
-4. **权限问题**
-   - 确保脚本有执行权限：`chmod +x run_t2s.sh`
-
-### 调试模式
-
-使用 `--verbose` 参数获取详细输出：
-
-```bash
-./run_t2s.sh -m res18 -d cifar100 --verbose
+# Model extraction attack
+python scripts/attack/extraction.py \
+    --idx 0 --target_dataset cifar10 --target_model res18 \
+    --stolen_model res18 --sur_dataset cifar10
 ```
 
-## 注意事项
+## 📝 Citation
 
-1. 确保有足够的磁盘空间存储模型和日志文件
-2. 训练时间取决于数据集大小、模型复杂度和硬件配置
-3. 建议在GPU上运行以获得更好的性能
-4. 定期检查实验日志以监控训练进度
+If you use the code or methods from this project, please cite:
 
-## 许可证
-
-请根据项目许可证使用此代码。
+```bibtex
+@INPROCEEDINGS{11463710,
+  author={Zhang, Weibin and Mei, Jian-Ping and Yu, Miaoqi and Zhu, Tiantian and Xiao, Jie},
+  booktitle={ICASSP 2026 - 2026 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 
+  title={Fine-Tuning Model Watermarks Against Extraction Attacks by Rehearsal}, 
+  year={2026},
+  pages={13967-13971},
+  keywords={Feedback;Circuits;Protocols;HTTP;Radio access networks;Regional area networks;Learning (artificial intelligence);Artificial neural networks;Artificial intelligence;Neural networks;model watermarking;model stealing;model intellectual property;stealing simulation},
+  doi={10.1109/ICASSP55912.2026.11463710}}
+```

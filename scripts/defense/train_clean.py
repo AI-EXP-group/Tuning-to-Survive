@@ -165,6 +165,7 @@ def main():
         help="Path to store all the relevant datasetS.",
     )
     parser.add_argument("--device", default="cuda:3", help="device to run")
+    parser.add_argument("--log_dir", default="logs", help="日志保存根目录")
 
     args = parser.parse_args()
 
@@ -176,7 +177,9 @@ def main():
     model = args.model
     dataset = args.dataset
 
-    save_dir = f"checkpoint/{dataset}/{model}/{idx}/clean/"
+    # 使用项目根目录下的 checkpoint 文件夹
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    save_dir = os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/clean/")
     save_path = save_dir + "checkpoint.pt"
 
     if os.path.exists(save_dir) and os.path.isdir(save_dir):
@@ -209,7 +212,9 @@ def main():
     experiment_log["accuracy"] = result
     experiment_log["time"] = f"{end_time - start_time:.2f}"
 
-    with open(save_dir + "experiment_log.json", "w") as log_file:
+    # 日志保存在checkpoint同目录下
+    log_save_path = os.path.join(save_dir, f"{dataset}_{model}_{idx}.json")
+    with open(log_save_path, "w") as log_file:
         json.dump(experiment_log, log_file, indent=4)
 
     print(experiment_log)

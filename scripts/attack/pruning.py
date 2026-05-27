@@ -65,10 +65,10 @@ def to_pruning(
             trigger = trigger
         else:
             trigger = torch.load(
-                f"checkpoint/{dataset}/{model}/{idx}/clean/trigger/{source_label}.pt"
+                os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/clean/trigger/{source_label}.pt")
             ).squeeze(0)
     elif wm_mode == "random_trigegr":
-        trigger = torch.load("feature/random_0_0.7.pth").squeeze(0)
+        trigger = torch.load(os.path.join(project_root, "feature/random_0_0.7.pth")).squeeze(0)
         wm_mode = "feature"
     else:
         trigger = None
@@ -143,6 +143,7 @@ def main():
         help="Path to store all the relevant datasetS.",
     )
     parser.add_argument("--device", default="cuda:0", help="device to run")
+    parser.add_argument("--log_dir", default="logs", help="日志保存根目录")
 
     args = parser.parse_args()
 
@@ -157,8 +158,8 @@ def main():
     sparsity = args.sparsity
     hard_label = args.hard_label
 
-    load_dir = f"checkpoint/{dataset}/{model}/{idx}/t2s/{wm_mode}/"
-    load_path = load_dir + (
+    load_dir = os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/t2s/{wm_mode}/")
+    load_path = os.path.join(project_root, f"checkpoint/{dataset}/{model}/{idx}/t2s/{wm_mode}/",
         f"extraction_hard_label.pt"
         if hard_label
         else f"extraction_soft_label_{model}_{dataset}.pt"
@@ -168,9 +169,14 @@ def main():
         model, dataset, load_path, wm_mode, sparsity, idx, source_label, target_label
     )
 
-    with open(load_dir + "experiment_log.json", "r") as file:
-        data = json.load(file)
+    # 日志保存在checkpoint同目录下
+    log_file_path = os.path.join(load_dir, f"{dataset}_{model}_{idx}.json")
 
+    if os.path.exists(log_file_path):
+        with open(log_file_path, "r") as file:
+            data = json.load(file)
+    else:
+        data = {}
     if "Purning" not in data:
         data["Purning"] = {}
     if hard_label:
@@ -182,7 +188,7 @@ def main():
             data["Purning"]["soft label"] = {}
         data["Purning"]["soft label"][f"{sparsity}"] = result[0], result[1]
 
-    with open(load_dir + "experiment_log.json", "w") as file:
+    with open(log_file_path, "w") as file:
         json.dump(data, file, indent=4)
 
 

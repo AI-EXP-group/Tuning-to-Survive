@@ -44,10 +44,10 @@ def extraction(
             trigger = trigger
         else:
             trigger = torch.load(
-                f"checkpoint/{dataset}/{victim_model}/{idx}/clean/trigger/{source_label1}.pt"
+                os.path.join(project_root, f"checkpoint/{dataset}/{victim_model}/{idx}/clean/trigger/{source_label1}.pt")
             ).squeeze(0)
     elif wm_mode == "random_trigegr":
-        trigger = torch.load("feature/random_0_0.7.pth").squeeze(0)
+        trigger = torch.load(os.path.join(project_root, "feature/random_0_0.7.pth")).squeeze(0)
         wm_mode = "feature"
     else:
         trigger = None
@@ -237,6 +237,7 @@ def main():
         help="Path to store all the relevant datasets.",
     )
     parser.add_argument("--device", default="cuda:3", type=str, help="device to run")
+    parser.add_argument("--log_dir", default="logs", type=str, help="日志保存根目录")
 
     args = parser.parse_args()
 
@@ -258,21 +259,21 @@ def main():
         source_label2 = args.source_label2 if args.source_label2 else 1
         target_label = args.target_label if args.target_label else 2
 
-    args.load_dir = f"checkpoint/{args.target_dataset}/{args.target_model}/{args.idx}/t2s/{args.mode}/"
+    args.load_dir = os.path.join(project_root, f"checkpoint/{args.target_dataset}/{args.target_model}/{args.idx}/t2s/{args.mode}/")
     if args.double_extraction:
-        args.load_path = args.load_dir + (
+        args.load_path = os.path.join(project_root, f"checkpoint/{args.target_dataset}/{args.target_model}/{args.idx}/t2s/{args.mode}/",
             f"extraction_hard_label_{args.stolen_model}_{args.sur_dataset}.pt"
             if args.hard_label
             else f"extraction_soft_label_{args.stolen_model}_{args.sur_dataset}.pt"
         )
-        args.save_path = args.load_dir + (
+        args.save_path = os.path.join(project_root, f"checkpoint/{args.target_dataset}/{args.target_model}/{args.idx}/t2s/{args.mode}/",
             f"double_extraction_hard_label_{args.stolen_model}_{args.sur_dataset}.pt"
             if args.hard_label
             else f"double_extraction_soft_label_{args.stolen_model}_{args.sur_dataset}.pt"
         )
     else:
-        args.load_path = args.load_dir + "checkpoint.pt"
-        args.save_path = args.load_dir + (
+        args.load_path = os.path.join(project_root, f"checkpoint/{args.target_dataset}/{args.target_model}/{args.idx}/t2s/{args.mode}/checkpoint.pt")
+        args.save_path = os.path.join(project_root, f"checkpoint/{args.target_dataset}/{args.target_model}/{args.idx}/t2s/{args.mode}/",
             f"extraction_hard_label_{args.stolen_model}_{args.sur_dataset}.pt"
             if args.hard_label
             else f"extraction_soft_label_{args.stolen_model}_{args.sur_dataset}.pt"
@@ -297,8 +298,14 @@ def main():
         save_path=args.save_path,
     )
 
-    with open(args.load_dir + "experiment_log.json", "r") as file:
-        data = json.load(file)
+    # 日志保存在checkpoint同目录下
+    log_file_path = os.path.join(args.load_dir, f"{args.target_dataset}_{args.target_model}_{args.idx}.json")
+
+    if os.path.exists(log_file_path):
+        with open(log_file_path, "r") as file:
+            data = json.load(file)
+    else:
+        data = {}
     if "Extraction" not in data:
         data["Extraction"] = {}
 
@@ -321,7 +328,7 @@ def main():
                 f"With Soft Label | {args.stolen_model} | {args.sur_dataset}"
             ] = (result[2], result[3])
 
-    with open(args.load_dir + "experiment_log.json", "w") as file:
+    with open(log_file_path, "w") as file:
         json.dump(data, file, indent=4)
 
 
